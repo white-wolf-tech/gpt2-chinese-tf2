@@ -22,4 +22,5 @@ python3.6、 tensorflow==2.1.0
 加油！
 ```
 50W条语料在data/目录下，data/ids目录是50W条语料转id后的结果
+
 训练执行：python3 train.py
