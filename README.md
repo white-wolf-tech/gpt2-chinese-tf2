@@ -1,8 +1,12 @@
 # tensorflow2.0 for Chinese GPT2 
 
-## UPDATE 2020.02.25
+## UPDATE 2020.02.26
+添加inference相关代码
+##UPDATE 2020.02.25
+添加train以及一些训练数据
+##说明
 参考使用 HuggingFace的[transformers](https://github.com/huggingface/transformers)实现GPT2模型的编写与训练。
-使用50W中文闲聊语料进行训练。目前只写了训练代码，后面添加infer代码。
+使用50W中文闲聊语料进行训练。
 
 ## 运行环境
 python3.6、 tensorflow==2.1.0
@@ -24,3 +28,5 @@ python3.6、 tensorflow==2.1.0
 50W条语料在data/目录下，data/ids目录是50W条语料转id后的结果
 
 训练执行：python3 train.py
+
+inference执行:python3 infer.py
