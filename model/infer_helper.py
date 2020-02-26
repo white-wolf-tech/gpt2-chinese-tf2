@@ -2,11 +2,8 @@
 import tensorflow as tf
 import numpy as np
 
-def convert2ids(raw_inputs,word2ids,max_len):
-    raw_inputs = raw_inputs[:max_len]
-    raw_ids = [word2ids[item] for item in raw_inputs]
-    raw_ids.append(word2ids['SEP'])
-    return raw_ids
+def convert2ids(raw_inputs,word2ids):
+    return [word2ids[item] for item in raw_inputs]
 
 def ids2text(id2word,output):
    return ''.join([id2word[item] for item in output])

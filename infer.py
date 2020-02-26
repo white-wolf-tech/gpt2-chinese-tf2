@@ -1,5 +1,6 @@
 #coding=utf-8
 import os
+import fire
 import numpy as np
 import tensorflow as tf
 from model.gpt2 import TFGPT2Model
@@ -11,7 +12,7 @@ save_vocab_path = './vocab/vocab.txt'
 checkpoint_path='./checkpoint/train'
 
 def interact_model(
-    dialog_history=5,
+    dialog_history=10,
     batch_size=1,
     temperature=1,
     top_k=0,
@@ -45,25 +46,49 @@ def interact_model(
                             top_k=top_k,
                             top_p=top_p)
         return output
-    history_text = []
+    history_buffer = []
     while True:
+        '''
+        超过buffer容量
+        '''
+        if len(history_buffer) > dialog_history:
+            history_buffer = []
+
         raw_text = input("user input>>")
         while not raw_text:
             print('输入为空，重新输入')
             raw_text = input("user input:")
-        context_tokens = convert2ids(raw_text,word2id,config.n_ctx)
-        history_text.append(context_tokens)
+        '''
+        获取输入ids
+        '''
+        context_tokens = convert2ids(raw_text,word2id)
+        history_buffer.append(context_tokens)
         infer_data = []
         infer_data.append(word2ids['SOS'])
-        for item in history_text:
+        for item in history_buffer:
             infer_data.extend(item)
+            infer_data.append(word2ids['SEP'])
+        '''
+        检查输入是否超过最大长度，超过则清空buffer，重新输入数据
+        '''
+        if len(infer_data) > config.n_ctx:
+            continue
+        '''
+        修改维度为[1,len(infer_data)]以适应transformer的运算维度
+        '''
         infer_data = np.array(infer_data,dtype=np.int64)
-        '''
-        修改维度为[1,len(raw_ids)]以适应transformer的运算维度
-        '''
         infer_data = np.expand_dims(infer_data,0)
+        '''
+        执行inference
+        '''
         out = infer_step(infer_data)
-        history_text.append(out[-1])
+        '''
+        当前robot输出结果存入对话buffer
+        '''
+        history_buffer.append(out[-1])
+        '''
+        解码并且显示结果
+        '''
         text = ids2text(out[-1])
         print("robot>>{}\n".format(text))
         print("*" * 80)
