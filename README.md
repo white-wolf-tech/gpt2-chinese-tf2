@@ -34,4 +34,5 @@ python3.6、 tensorflow==2.1.0
 ```
 ## 参考资料
 感谢[GPT2-chitchat](https://github.com/yangjianxin1/GPT2-chitchat)项目中提供50W条聊天语料[百度网盘【提取码:osi6】](https://pan.baidu.com/s/1qDZ24VKLBU9GKARX9Ev65g)
-openai的GPT2源代码以及其inference代码(https://github.com/openai/gpt-2.git)
+
+openai的[GPT2](https://github.com/openai/gpt-2.git)源代码以及其inference代码
