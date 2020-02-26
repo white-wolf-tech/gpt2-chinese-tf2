@@ -1,6 +1,7 @@
 #coding=utf-8
 import os
 import tensorflow as tf
+from tqdm import tqdm
 from model.gpt2 import TFGPT2Model
 from model.gpt2_config import GPT2Config
 from model.data_helper import gen_voc,load_vocab,process_raws_data,load_traindata_ids,gen_batch_data
@@ -74,7 +75,7 @@ if __name__ == '__main__':
     for epoch in range(config.epoch):
         train_loss.reset_states()
         train_accuracy.reset_states()
-        for index,batch in enumerate(gen_batch_data(config.batch_size,ids)):
+        for index,batch in enumerate(tqdm(gen_batch_data(config.batch_size,ids))):
             train_step(batch)
             if index % 50 == 0 and index > 0:
                 print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(
