@@ -6,6 +6,7 @@
 添加train以及一些训练数据
 ## 说明
 参考使用 HuggingFace的[transformers](https://github.com/huggingface/transformers)实现GPT2模型的编写与训练。
+整体想法来源微软论文[Large-scale Pretrained Response Generation Model (DialoGPT)](https://arxiv.org/abs/1911.00536)原文实现[代码](https://github.com/microsoft/DialoGPT)
 使用50W中文闲聊语料进行训练。
 ## 运行环境
 python3.6、 tensorflow==2.1.0

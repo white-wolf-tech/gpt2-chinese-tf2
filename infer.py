@@ -33,6 +33,14 @@ def interact_model(
         raise
     checkpoint.restore(ckpt)
     '''
+    过去隐含层尺寸
+    在attention层计算后，需要stack key和value，这时past维度为：
+       [batch_size, 2, config.n_head, sequence, config.n_embd // config.n_head]
+    然后每层block的past存储起来维度为：
+       [batch_size, config.n_layer, 2, config.n_head, sequence, config.n_embd // config.n_head]
+    '''
+    past_shape = [batch_size, config.n_layer, 2, config.n_head, sequence, config.n_embd // config.n_head]
+    '''
     执行对话生成
     '''
     @tf.function
@@ -40,6 +48,7 @@ def interact_model(
         output = gen_sequence(model=gpt2_model,
                             length=config.n_ctx,
                             context=context,
+                            past_shape=past_shape,
                             eos_token=word2id['SEP'],
                             batch_size=batch_size,
                             temperature=temperature,

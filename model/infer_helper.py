@@ -45,10 +45,10 @@ def top_p_logits(logits, p):
         logits,
     )
 
-
 def gen_sequence(model=None,
                 length=None,
                 context=None,
+                past_shape=None,
                 start_token=None,
                 eos_token=None,
                 batch_size=None,
@@ -72,7 +72,7 @@ def gen_sequence(model=None,
 
         logits = lm_output[0][:, :, :vocab_size]
         presents = lm_output[1]
-        presents.set_shape(model.past_shape(hparams=hparams, batch_size=batch_size))
+        presents.set_shape(past_shape)
         return {'logits': logits,'presents': presents}
     '''
     可以看到每次输入的prev是前一个samples，只有一个字，所以每次取logit最后一个输出
@@ -110,7 +110,7 @@ def gen_sequence(model=None,
                 output
             ],
             shape_invariants=[
-                tf.TensorShape(model.past_shape(hparams=hparams, batch_size=batch_size)),
+                tf.TensorShape(past_shape),
                 tf.TensorShape([batch_size, None]),
                 tf.TensorShape([batch_size, None]),
             ],
