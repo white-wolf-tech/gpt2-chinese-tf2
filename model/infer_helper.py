@@ -71,9 +71,12 @@ def gen_sequence(model=None,
         lm_output = model(inputs=tokens, past=past, training=False)
 
         logits = lm_output[0][:, :, :vocab_size]
-        presents = lm_output[1]
-        presents.set_shape(past_shape)
-        return {'logits': logits,'presents': presents}
+        if past_shape is None:
+            return {'logits': logits,'presents':None}
+        else:
+            presents = lm_output[1]
+            presents.set_shape(past_shape)
+            return {'logits': logits,'presents': presents}
     '''
     可以看到每次输入的prev是前一个samples，只有一个字，所以每次取logit最后一个输出
     而prev则每次记录前面的输出
@@ -85,15 +88,21 @@ def gen_sequence(model=None,
             logits = top_k_logits(logits, k=top_k)
             logits = top_p_logits(logits, p=top_p)
             samples = tf.random.categorical(logits, num_samples=1, dtype=tf.int32)
+            output = tf.concat([output, samples], axis=1)
+            if past_shape is None:
+                next_input = tf.concat([prev,output],axis=1)
+            else:
+                next_input = samples
             return [
                 next_outputs['presents'] if past is None else tf.concat([past, next_outputs['presents']], axis=-2),
-                samples,
-                tf.concat([output, samples], axis=1)
+                next_input,
+                output
             ]
         '''
         初始化body函数
         '''
-        past, prev, output = body(None, context, context)
+        output_init = np.expand_dims(np.array([]),0)
+        past, prev, output = body(None, context, output_init)
 
         def cond(*args):
             if eos_token!=None:
