@@ -9,6 +9,7 @@ from model.model_helper import CustomSchedule,checkmodel,loss_function
 raw_path = './data'
 save_vocab_path = './vocab/vocab.txt'
 checkpoint_path='./checkpoint/train'
+checkpoint_prefix = os.path.join(checkpoint_directory, "gpt2")
 
 def creat_model(config):
     gpt2model = TFGPT2Model(config)
@@ -58,7 +59,7 @@ if __name__ == '__main__':
     @tf.function(input_signature=train_step_signature)
     def train_step(input_ids):
         with tf.GradientTape() as tape:
-            outputs = gpt2model(input_ids)
+            outputs = gpt2model(input_ids,training=True)
             logits = outputs[0][:, :-1,:]
             target = input_ids[:, 1:]
             loss = loss_function(target, logits, loss_object)

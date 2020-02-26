@@ -1,7 +1,7 @@
+#coding=utf-8
 #/usr/bin/env python3
 import tensorflow as tf
 import numpy as np
-
 
 def shape_list(x):
     static = x.shape.as_list()
@@ -154,7 +154,19 @@ class TFAttention(tf.keras.layers.Layer):
         query = self.split_heads(query)
         key = self.split_heads(key)
         value = self.split_heads(value)
+        '''
+        这里的past是inference阶段使用，使用上一次输出layer_past更新key和value
+        按照split_heads后的维度可以知道，是将layer_past加到seq_length这一维度上
+        例子：
+        query维度是(1, 2, 1, 1)
+        key维度是(1, 2, 4, 1)
+        (query*key.T)-->(1, 2, 1, 4)，将seq_length转为1。
+        则输出logits仍然取最后一个
+        '''
         if layer_past is not None:
+            '''
+            上一个present是key和value经过tf.stack输出，需要先unstack恢复key和value
+            '''
             past_key, past_value = tf.unstack(layer_past, axis=1)
             key = tf.concat([past_key, key], axis=-2)
             value = tf.concat([past_value, value], axis=-2)
