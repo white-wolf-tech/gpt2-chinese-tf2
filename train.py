@@ -10,7 +10,7 @@ from model.model_helper import CustomSchedule,checkmodel,loss_function
 raw_path = './data'
 save_vocab_path = './vocab/vocab.txt'
 checkpoint_path='./checkpoint/train'
-checkpoint_prefix = os.path.join(checkpoint_directory, "gpt2")
+checkpoint_prefix = os.path.join(checkpoint_path, "gpt2")
 
 def creat_model(config):
     gpt2model = TFGPT2Model(config)

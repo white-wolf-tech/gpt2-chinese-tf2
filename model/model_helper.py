@@ -1,6 +1,5 @@
+#coding=utf-8
 import tensorflow as tf
-
-
 '''
 学习率生成模块
 '''
