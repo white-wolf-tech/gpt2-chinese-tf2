@@ -71,7 +71,11 @@ def preprocess_triandata2ids(train_raw_path, train_tokenized_path, word2id, n_ct
                 utterances = dialogue.split("\n")
             dialogue_ids = [str(word2id['SOS'])]  # 每句话以SOS开头
             for utterance in utterances:
-                dialogue_ids.extend([str(word2id[word]) for word in utterance])
+                for word in utterance:
+                    if word in word2id.keys():
+                        dialogue_ids.extend([str(word2id[word])])
+                    else:
+                        dialogue_ids.extend([str(word2id['unused0'])])
                 dialogue_ids.append(str(word2id['SEP']))  #每句话结束加SEP
             # 超过最大长度的数据则丢弃
             if len(dialogue_ids) > max_len:

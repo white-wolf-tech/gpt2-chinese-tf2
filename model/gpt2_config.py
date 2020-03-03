@@ -2,12 +2,12 @@
 class GPT2Config():
     def __init__(
         self,
-        vocab_size=7590,
+        vocab_size=7591,
         n_positions=400,
         n_ctx=400,
-        n_embd=768,
-        n_layer=10,
-        n_head=12,
+        n_embd=384,
+        n_layer=8,
+        n_head=6,
         resid_pdrop=0.1,
         embd_pdrop=0.1,
         attn_pdrop=0.1,
@@ -17,8 +17,8 @@ class GPT2Config():
         output_attentions=False,
         lr=1.5e-4,
         epoch=100,
-        batch_size=8,
-        dynamics_lr=False,
+        batch_size=4,
+        dynamics_lr=True,
         **kwargs
     ):
         super().__init__(**kwargs)

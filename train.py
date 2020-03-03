@@ -48,6 +48,8 @@ if __name__ == '__main__':
     '''
     if not os.path.exists(raw_path + '/ids'):
         process_raws_data(raw_path,word2id,config.n_ctx)
+    elif len(os.listdir(raw_path + '/ids')) == 0:
+        process_raws_data(raw_path,word2id,config.n_ctx)
     ids = load_traindata_ids(raw_path)
     '''
     加载模型
@@ -78,18 +80,11 @@ if __name__ == '__main__':
         for index,batch in enumerate(tqdm(gen_batch_data(config.batch_size,ids))):
             train_step(batch)
             if index % 50 == 0 and index > 0:
-                print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(
-          epoch + 1, index, train_loss.result(), train_accuracy.result()))
+                print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, index, train_loss.result(), train_accuracy.result()))
             if index % 500 == 0 and index > 0:
                 ckpt_save_path = ckpt_manager.save()
-                print('Saving checkpoint for epoch {} at {}'.format(epoch+1,
-                                                ckpt_save_path))
-                print ('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, 
-                                                train_loss.result(), 
-                                                train_accuracy.result()))
+                print('Saving checkpoint inner for epoch {} at {}'.format(epoch+1,ckpt_save_path))
+                print ('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, train_loss.result(),train_accuracy.result()))
         ckpt_save_path = ckpt_manager.save()
-        print('Saving checkpoint for epoch {} at {}'.format(epoch+1,
-                                                ckpt_save_path))
-        print ('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, 
-                                                train_loss.result(), 
-                                                train_accuracy.result()))
+        print('Saving checkpoint outter for epoch {} at {}'.format(epoch+1,ckpt_save_path))
+        print ('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, train_loss.result(),train_accuracy.result()))
