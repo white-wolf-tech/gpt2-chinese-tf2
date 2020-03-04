@@ -1,6 +1,6 @@
 # tensorflow2.0 for Chinese GPT2 
 
-##warning
+## warning
 目前infer相关代码均未调试！！！模型正在训练中～～～
 
 ## UPDATE 2020.0304
