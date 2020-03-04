@@ -58,6 +58,7 @@ if __name__ == '__main__':
     '''
     训练代码
     '''
+    # 指定input_signature何时调用tf.function以确保仅构建一个功能图
     train_step_signature = [tf.TensorSpec(shape=(None, None), dtype=tf.int64)]
     @tf.function(input_signature=train_step_signature)
     def train_step(input_ids):

@@ -5,9 +5,9 @@ class GPT2Config():
         vocab_size=7591,
         n_positions=400,
         n_ctx=400,
-        n_embd=384,
-        n_layer=8,
-        n_head=6,
+        n_embd=768,
+        n_layer=10,
+        n_head=12,
         resid_pdrop=0.1,
         embd_pdrop=0.1,
         attn_pdrop=0.1,
@@ -15,10 +15,10 @@ class GPT2Config():
         initializer_range=0.02,
         output_hidden_states=False,
         output_attentions=False,
-        lr=1.5e-4,
+        lr=1e-4,
         epoch=100,
-        batch_size=4,
-        dynamics_lr=True,
+        batch_size=1,
+        dynamics_lr=False,
         **kwargs
     ):
         super().__init__(**kwargs)

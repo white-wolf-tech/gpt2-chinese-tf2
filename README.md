@@ -1,5 +1,12 @@
 # tensorflow2.0 for Chinese GPT2 
 
+##warning
+目前infer相关代码均未调试！！！模型正在训练中～～～
+
+## UPDATE 2020.0304
+添加目前可用的用于tensorflow2.0打包成pb的方案。
+[代码参考](https://leimao.github.io/blog/Save-Load-Inference-From-TF2-Frozen-Graph)
+后续有新的方法，继续更新
 ## UPDATE 2020.02.26
 添加inference相关代码
 ## UPDATE 2020.02.25

@@ -5,7 +5,7 @@ import numpy as np
 def convert2ids(raw_inputs,word2ids):
     return [word2ids[item] for item in raw_inputs]
 
-def ids2text(id2word,output):
+def ids2text(output,id2word):
    return ''.join([id2word[item] for item in output])
 
 def top_k_logits(logits, k):

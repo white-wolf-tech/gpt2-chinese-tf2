@@ -7,6 +7,7 @@ from model.gpt2 import TFGPT2Model
 from model.gpt2_config import GPT2Config
 from model.data_helper import load_vocab
 from model.infer_helper import convert2ids,ids2text,gen_sequence
+from tensorflow.python.framework.convert_to_constants import convert_variables_to_constants_v2
 
 save_vocab_path = './vocab/vocab.txt'
 checkpoint_path='./checkpoint/train'
@@ -46,6 +47,39 @@ def interact_model(
                             top_k=top_k,
                             top_p=top_p)
         return output
+    '''
+    获取计算图
+    '''
+    gpt2_concrete = infer_step.get_concrete_function(
+        context = tf.TensorSpec(shape=(None, None), dtype=tf.int64))
+    '''
+    获取静态图计算函数
+    '''
+    frozen_func = convert_variables_to_constants_v2(full_model)
+    frozen_func.graph.as_graph_def()
+    '''
+    打印计算节点
+    '''
+    layers = [op.name for op in frozen_func.graph.get_operations()]
+    print("*" * 50)
+    print("Frozen model layers: ")
+    for layer in layers:
+        print(layer)
+    print("*" * 50)
+    print("Frozen model inputs: ")
+    print(frozen_func.inputs)
+    print("Frozen model outputs: ")
+    print(frozen_func.outputs)
+    '''
+    打包pb，并写入文件
+    '''
+    tf.io.write_graph(graph_or_graph_def=frozen_func.graph,
+                      logdir="./checkpoint",
+                      name="chat.pb",
+                      as_text=False)
+    '''
+    chat bot 开始
+    '''
     history_buffer = []
     while True:
         '''
@@ -89,7 +123,7 @@ def interact_model(
         '''
         解码并且显示结果
         '''
-        text = ids2text(out[-1])
+        text = ids2text(out[-1],id2word)
         print("robot>>{}\n".format(text))
         print("*" * 80)
 

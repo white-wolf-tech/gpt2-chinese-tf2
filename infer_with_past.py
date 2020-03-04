@@ -45,6 +45,7 @@ def interact_model(
     '''
     @tf.function
     def infer_step(context):
+        context = tf.tf.identity(context,name="input_ids")
         output = gen_sequence(model=gpt2_model,
                             length=config.n_ctx,
                             context=context,
@@ -54,7 +55,9 @@ def interact_model(
                             temperature=temperature,
                             top_k=top_k,
                             top_p=top_p)
+        output = tf.tf.identity(output,name="output")
         return output
+    
     history_buffer = []
     while True:
         '''
@@ -98,7 +101,7 @@ def interact_model(
         '''
         解码并且显示结果
         '''
-        text = ids2text(out[-1])
+        text = ids2text(out[-1],id2word)
         print("robot>>{}\n".format(text))
         print("*" * 80)
 
