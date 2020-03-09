@@ -1,7 +1,7 @@
 # tensorflow2.0 for Chinese GPT2 
 
-## warning
-目前infer相关代码均未调试！！！模型正在训练中～～～
+## updata 2020.0309
+infer相关代码调试完成，目前infer不支持加@tf.function，故而打pb的方法也不支持
 
 ## UPDATE 2020.0304
 添加目前可用的用于tensorflow2.0打包成pb的方案。
