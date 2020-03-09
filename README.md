@@ -1,16 +1,10 @@
 # tensorflow2.0 for Chinese GPT2 
 
-## updata 2020.0309
+## 近期更新(持续修改中。。。)
 infer相关代码调试完成，目前infer不支持加@tf.function，故而打pb的方法也不支持
 
-## UPDATE 2020.0304
-添加目前可用的用于tensorflow2.0打包成pb的方案。
+目前可用的用于tensorflow2.0打包成pb的方案。
 [代码参考](https://leimao.github.io/blog/Save-Load-Inference-From-TF2-Frozen-Graph)
-后续有新的方法，继续更新
-## UPDATE 2020.02.26
-添加inference相关代码
-## UPDATE 2020.02.25
-添加train以及一些训练数据
 ## 说明
 参考使用 HuggingFace的[transformers](https://github.com/huggingface/transformers)实现GPT2模型的编写与训练。
 整体想法来源微软论文[Large-scale Pretrained Response Generation Model (DialoGPT)](https://arxiv.org/abs/1911.00536)原文实现[代码](https://github.com/microsoft/DialoGPT)
