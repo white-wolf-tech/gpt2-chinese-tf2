@@ -18,18 +18,6 @@ class CustomSchedule(tf.keras.optimizers.schedules.LearningRateSchedule):
     return tf.math.rsqrt(self.d_model) * tf.math.minimum(arg1, arg2)
 
 '''
-检查是否能载入训练好的模型
-'''
-def checkmodel(checkpoint_path,model,opt):
-    ckpt = tf.train.Checkpoint(model=model,optimizer=opt)
-    ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
-    if ckpt_manager.latest_checkpoint:
-        ckpt.restore(ckpt_manager.latest_checkpoint)
-        print ('Latest checkpoint restored!!')
-    else:
-        print ('create new model...')
-    return ckpt_manager
-'''
 计算loss
 '''
 def loss_function(target, logits,loss_object):

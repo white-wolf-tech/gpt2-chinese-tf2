@@ -5,12 +5,11 @@ from tqdm import tqdm
 from model.gpt2 import TFGPT2Model
 from model.gpt2_config import GPT2Config
 from model.data_helper import gen_voc,load_vocab,process_raws_data,load_traindata_ids,gen_batch_data
-from model.model_helper import CustomSchedule,checkmodel,loss_function
+from model.model_helper import CustomSchedule,loss_function
 
 raw_path = './data'
 save_vocab_path = './vocab/vocab.txt'
-checkpoint_path='./checkpoint/train'
-checkpoint_prefix = os.path.join(checkpoint_path, "gpt2")
+checkpoint_path='./checkpoint/train/'
 
 def creat_model(config):
     gpt2model = TFGPT2Model(config)
@@ -23,14 +22,11 @@ def creat_model(config):
                                     beta_1=0.9,
                                     beta_2=0.98,
                                     epsilon=1e-9)
-    ckpt_manager = checkmodel(checkpoint_path,gpt2model,optimizer)
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True, reduction='none')
     '''
     训练过程中查看信息
     '''
-    train_loss = tf.keras.metrics.Mean(name='train_loss')
-    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
-    return gpt2model,optimizer,ckpt_manager,loss_object,train_loss,train_accuracy
+    return gpt2model,optimizer,loss_object
 
 if __name__ == '__main__':
     '''
@@ -50,21 +46,27 @@ if __name__ == '__main__':
         process_raws_data(raw_path,word2id,config.n_ctx)
     elif len(os.listdir(raw_path + '/ids')) == 0:
         process_raws_data(raw_path,word2id,config.n_ctx)
-    ids = load_traindata_ids(raw_path)
-    '''
-    加载模型
-    '''
-    gpt2model,optimizer,ckpt_manager,loss_object,train_loss,train_accuracy = creat_model(config)
+    ids = load_traindata_ids(raw_path)    
     '''
     训练代码
     '''
+    gpt2model,optimizer,loss_object = creat_model(config)
+    train_loss = tf.keras.metrics.Mean(name='train_loss')
+    train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
+    '''
+    '''
+    if tf.train.latest_checkpoint(checkpoint_path) is not None:
+        print("recover old model....")
+        gpt2model.load_weights(tf.train.latest_checkpoint(checkpoint_path))
+    else:
+        print("creat new model....")
     # 指定input_signature何时调用tf.function以确保仅构建一个功能图
     train_step_signature = [tf.TensorSpec(shape=(None, None), dtype=tf.int64)]
     @tf.function(input_signature=train_step_signature)
     def train_step(input_ids):
         with tf.GradientTape() as tape:
-            outputs = gpt2model(input_ids,training=True)
-            logits = outputs[0][:, :-1,:]
+            outputs = gpt2model(input_ids[:, :-1],training=True)
+            logits = outputs[0]
             target = input_ids[:, 1:]
             loss = loss_function(target, logits, loss_object)
         gradients = tape.gradient(loss, gpt2model.trainable_variables)
@@ -83,9 +85,7 @@ if __name__ == '__main__':
             if index % 50 == 0 and index > 0:
                 print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, index, train_loss.result(), train_accuracy.result()))
             if index % 500 == 0 and index > 0:
-                ckpt_save_path = ckpt_manager.save()
-                print('Saving checkpoint inner for epoch {} at {}'.format(epoch+1,ckpt_save_path))
-                print ('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, train_loss.result(),train_accuracy.result()))
-        ckpt_save_path = ckpt_manager.save()
+                gpt2model.save_weights(checkpoint_path + "gpt2")
+                print('Saving checkpoint inner for epoch {}'.format(epoch+1))
+        gpt2model.save_weights(checkpoint_path + "gpt2")
         print('Saving checkpoint outter for epoch {} at {}'.format(epoch+1,ckpt_save_path))
-        print ('Epoch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, train_loss.result(),train_accuracy.result()))

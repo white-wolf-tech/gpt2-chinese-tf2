@@ -35,7 +35,7 @@ def load_run_pb(pb_path="./checkpoint/chat.pb"):
 
     # 从pb中恢复tf.function的concrete函数
     frozen_func = wrap_frozen_graph(graph_def=graph_def,
-                                    inputs=["input_ids:0"],
+                                    inputs=["input:0"],
                                     outputs=["output:0"],
                                     print_graph=True)
 
@@ -79,7 +79,7 @@ def load_run_pb(pb_path="./checkpoint/chat.pb"):
         '''
         当前robot输出结果存入对话buffer
         '''
-        history_buffer.append(out[-1],id2word)
+        history_buffer.append(out,id2word)
         '''
         解码并且显示结果
         '''

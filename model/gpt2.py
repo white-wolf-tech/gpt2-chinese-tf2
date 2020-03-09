@@ -304,6 +304,7 @@ class TFGPT2MainLayer(tf.keras.layers.Layer):
             past_length = 0
             past = [None] * len(self.h)
         else:
+            past = tf.unstack(past, axis=1)
             past_length = shape_list(past[0][0])[-2]
         if position_ids is None:
             position_ids = tf.range(past_length, input_shape[-1] + past_length, dtype=tf.int32)[tf.newaxis, :]
@@ -356,7 +357,10 @@ class TFGPT2MainLayer(tf.keras.layers.Layer):
         presents = ()
         all_attentions = []
         all_hidden_states = ()
-        for i, (block, layer_past) in enumerate(zip(self.h, past)):
+
+        for i in range(self.num_hidden_layers):
+            block = self.h[i]
+            layer_past = past[i]
             if self.output_hidden_states:
                 all_hidden_states = all_hidden_states + (tf.reshape(hidden_states, output_shape),)
 
@@ -375,6 +379,7 @@ class TFGPT2MainLayer(tf.keras.layers.Layer):
         if self.output_hidden_states:
             all_hidden_states = all_hidden_states + (hidden_states,)
 
+        presents = tf.stack(presents, axis=1)
         outputs = (self.dense_layer(hidden_states), presents)
         if self.output_hidden_states:
             outputs = outputs + (all_hidden_states,)

@@ -27,39 +27,31 @@ def interact_model(
     '''
     config = GPT2Config()
     gpt2_model = TFGPT2Model(config)
-    checkpoint = tf.train.Checkpoint(gpt2_model=gpt2_model)
-    ckpt = tf.train.latest_checkpoint(checkpoint_path)
-    if ckpt == None:
-        print("no ckpt exist!!!")
-        raise
-    checkpoint.restore(ckpt)
+    gpt2_model.load_weights(tf.train.latest_checkpoint(checkpoint_path))
     '''
     执行对话生成
     '''
-    @tf.function
+    #@tf.function()
     def infer_step(context):
         output = gen_sequence(model=gpt2_model,
                             length=config.n_ctx,
                             context=context,
                             eos_token=word2id['SEP'],
                             batch_size=batch_size,
+                            vocab_size=config.vocab_size,
                             temperature=temperature,
                             top_k=top_k,
                             top_p=top_p)
+        output = tf.identity(output,name="output")
         return output
     '''
-    获取计算图
-    '''
+
     gpt2_concrete = infer_step.get_concrete_function(
-        context = tf.TensorSpec(shape=(None, None), dtype=tf.int64))
-    '''
-    获取静态图计算函数
-    '''
-    frozen_func = convert_variables_to_constants_v2(full_model)
+        tf.TensorSpec(shape=(None, None), dtype=tf.int64,name='input'))
+
+    frozen_func = convert_variables_to_constants_v2(gpt2_concrete)
     frozen_func.graph.as_graph_def()
-    '''
-    打印计算节点
-    '''
+
     layers = [op.name for op in frozen_func.graph.get_operations()]
     print("*" * 50)
     print("Frozen model layers: ")
@@ -70,13 +62,12 @@ def interact_model(
     print(frozen_func.inputs)
     print("Frozen model outputs: ")
     print(frozen_func.outputs)
-    '''
-    打包pb，并写入文件
-    '''
+
     tf.io.write_graph(graph_or_graph_def=frozen_func.graph,
                       logdir="./checkpoint",
                       name="chat.pb",
                       as_text=False)
+    '''
     '''
     chat bot 开始
     '''
@@ -92,38 +83,43 @@ def interact_model(
         while not raw_text:
             print('输入为空，重新输入')
             raw_text = input("user input:")
+        if raw_text == 'quit':
+            break
         '''
         获取输入ids
         '''
         context_tokens = convert2ids(raw_text,word2id)
         history_buffer.append(context_tokens)
         infer_data = []
-        infer_data.append(word2ids['SOS'])
+        infer_data.append(word2id['SOS'])
         for item in history_buffer:
             infer_data.extend(item)
-            infer_data.append(word2ids['SEP'])
+            if infer_data[-1] != word2id['SEP']:
+                infer_data.append(word2id['SEP'])
         '''
         检查输入是否超过最大长度，超过则清空buffer，重新输入数据
         '''
         if len(infer_data) > config.n_ctx:
+            history_buffer = []
             continue
         '''
         修改维度为[1,len(infer_data)]以适应transformer的运算维度
         '''
-        infer_data = np.array(infer_data,dtype=np.int64)
+        infer_data = np.array(infer_data,dtype=np.int32)
         infer_data = np.expand_dims(infer_data,0)
         '''
         执行inference
         '''
         out = infer_step(infer_data)
+        out = out.numpy()[0]
         '''
         当前robot输出结果存入对话buffer
         '''
-        history_buffer.append(out[-1])
+        history_buffer.append(out)
         '''
         解码并且显示结果
         '''
-        text = ids2text(out[-1],id2word)
+        text = ids2text(out,id2word)
         print("robot>>{}\n".format(text))
         print("*" * 80)
 
