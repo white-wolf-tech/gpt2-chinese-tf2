@@ -67,7 +67,7 @@ def gen_sequence(model=None,
                 top_k=0,
                 top_p=1):
     '''
-    若要进行无条件随机输入，start_token赋值SOS，输入为SOS_id。否则未context
+    若要进行无条件随机输入，start_token赋值SOS，输入为SOS_id。否则为context
     '''
     if start_token is None:
         assert context is not None, 'Specify exactly one of start_token and context!'
@@ -75,10 +75,10 @@ def gen_sequence(model=None,
         assert context is None, 'Specify exactly one of start_token and context!'
         context = tf.fill([batch_size, 1], start_token)
     '''
-    生成logits和past
+    生成logits和past,目前使用无past的方法，past载入参数过多
     '''
-    def step(tokens, past=None):
-        lm_output = model(inputs=tokens, past=past, training=False)
+    def step(tokens):
+        lm_output = model(inputs=tokens, past=None, training=False)
 
         logits = lm_output[0][:, :, :vocab_size]
         if past_shape is None:
@@ -122,7 +122,9 @@ def gen_sequence(model=None,
                     return False
                 else:
                     return True
-
+        '''
+        进行循环，逐字生成序列
+        '''
         prev, output = tf.while_loop(
                         cond,
                         body,

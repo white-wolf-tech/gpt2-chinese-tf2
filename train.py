@@ -54,6 +54,7 @@ if __name__ == '__main__':
     train_loss = tf.keras.metrics.Mean(name='train_loss')
     train_accuracy = tf.keras.metrics.SparseCategoricalAccuracy(name='train_accuracy')
     '''
+    载入旧模型
     '''
     if tf.train.latest_checkpoint(checkpoint_path) is not None:
         print("recover old model....")
@@ -77,6 +78,7 @@ if __name__ == '__main__':
     '''
     运行训练过程
     '''
+    all_step = 0
     for epoch in range(config.epoch):
         train_loss.reset_states()
         train_accuracy.reset_states()
@@ -84,8 +86,9 @@ if __name__ == '__main__':
             train_step(batch)
             if index % 50 == 0 and index > 0:
                 print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, index, train_loss.result(), train_accuracy.result()))
-            if index % 500 == 0 and index > 0:
-                gpt2model.save_weights(checkpoint_path + "gpt2")
+            if index % 10000 == 0 and index > 0:
+                gpt2model.save_weights(checkpoint_path + "gpt2-" + str(all_step))
                 print('Saving checkpoint inner for epoch {}'.format(epoch+1))
-        gpt2model.save_weights(checkpoint_path + "gpt2")
+            all_step = all_step + 1
+        gpt2model.save_weights(checkpoint_path + "gpt2-" + str(all_step))
         print('Saving checkpoint outter for epoch {} at {}'.format(epoch+1,ckpt_save_path))
