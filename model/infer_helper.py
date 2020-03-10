@@ -77,8 +77,8 @@ def gen_sequence(model=None,
     '''
     生成logits和past,目前使用无past的方法，past载入参数过多
     '''
-    def step(tokens):
-        lm_output = model(inputs=tokens, past=None, training=False)
+    def step(tokens,past=None):
+        lm_output = model(inputs=tokens, past=past, training=False)
 
         logits = lm_output[0][:, :, :vocab_size]
         if past_shape is None:
