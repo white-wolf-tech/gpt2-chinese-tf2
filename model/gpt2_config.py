@@ -19,6 +19,7 @@ class GPT2Config():
         epoch=100,
         batch_size=4,
         dynamics_lr=False,
+        read_len=40000,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -40,6 +41,7 @@ class GPT2Config():
         self.batch_size = batch_size
         self.lr = lr
         self.dynamics_lr = dynamics_lr
+        self.read_len = read_len
 
     @property
     def max_position_embeddings(self):

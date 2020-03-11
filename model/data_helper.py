@@ -54,79 +54,76 @@ def load_vocab(save_vocab_path):
 '''
 生成训练数据相关代码
 '''
-def preprocess_triandata2ids(train_raw_path, train_tokenized_path, word2id, n_ctx):
-    max_len = 0
-    count_beyond = 0
-    with open(train_raw_path, 'rb') as f:
-        data = f.read().decode("utf-8")
+def read_data_lines(filename):
+    with open(filename, 'rb') as f:
+        data = f.read().decode("utf-8").strip()
     if "\r\n" in data:
         train_data = data.split("\r\n\r\n")
     else:
         train_data = data.split("\n\n")
-    with open(train_tokenized_path, "w", encoding="utf-8") as f:
-        for dialogue_index, dialogue in enumerate(tqdm(train_data)):
-            if "\r\n" in data:
-                utterances = dialogue.split("\r\n")
-            else:
-                utterances = dialogue.split("\n")
-            dialogue_ids = [str(word2id['SOS'])]  # 每句话以SOS开头
-            for utterance in utterances:
-                for word in utterance:
-                    if word in word2id.keys():
-                        dialogue_ids.extend([str(word2id[word])])
-                    else:
-                        dialogue_ids.extend([str(word2id['unused0'])])
-                dialogue_ids.append(str(word2id['SEP']))  #每句话结束加SEP
-            # 超过最大长度的数据则丢弃
-            if len(dialogue_ids) > max_len:
-                max_len = len(dialogue_ids)
-            if len(dialogue_ids) > n_ctx:
-                count_beyond = count_beyond + 1
-                continue
-            #小于最大长度的数据写入ids文件
-            f.write(' '.join(dialogue_ids))
-            # 最后一条记录不添加换行符
-            if dialogue_index < len(train_data) - 1:
-                f.write("\n")
-    print("tokenized_file is stored in {}".format(train_tokenized_path))
-    print("bigger than max len count is {}".format(count_beyond))
-    return max_len
+    return train_data
 
-def process_raws_data(path,word2id, n_ctx):
-    max_len_end = 0
-    for file in get_files(path,'.txt'):
-        temp_path = file.split('/')
-        tokenized_name = temp_path[-1].split('.txt')[0] + '.ids'
-        tokenized_path = '/'.join(temp_path[:-1]) + '/ids/'
-        if not os.path.exists(tokenized_path):
-            os.mkdir(tokenized_path)
-        tokenized_file = tokenized_path + tokenized_name
-        max_len = preprocess_triandata2ids(file,tokenized_file,word2id,n_ctx)
-        if max_len > max_len_end:
-            max_len_end =  max_len
-    print("max len in train corpus is {}".format(max_len_end))
+def preprocess_triandata2ids(current_data , word2id, n_ctx):
+    max_len = 0
+    count_beyond = 0
+    datas_res = []
+
+    for dialogue_index, dialogue in enumerate(tqdm(current_data)):
+        if "\r\n" in current_data:
+            utterances = dialogue.split("\r\n")
+        else:
+            utterances = dialogue.split("\n")
+        dialogue_ids = [str(word2id['SOS'])]  # 每句话以SOS开头
+        for utterance in utterances:
+            for word in utterance:
+                if word in word2id.keys():
+                    dialogue_ids.extend([str(word2id[word])])
+                else:
+                    dialogue_ids.extend([str(word2id['unused0'])])
+            dialogue_ids.append(str(word2id['SEP']))  #每句话结束加SEP
+        # 超过最大长度的数据则丢弃
+        if len(dialogue_ids) > max_len:
+            max_len = len(dialogue_ids)
+        if len(dialogue_ids) > n_ctx:
+            count_beyond = count_beyond + 1
+            continue
+        datas_res.append(dialogue_ids)
+    print("bigger than max len count is {}".format(count_beyond))
+    return max_len,datas_res
 
 '''
 载入训练数据相关代码
 '''
-def load_traindata_ids(path):
-    if path.endswith('/'):
-        tokenized_path = path + 'ids/'
-    else:
-        tokenized_path = path + '/ids/'
-    if not os.path.exists(tokenized_path):
-        print("train data ids dir is not exist")
+def load_traindata_ids(path,word2id,max_len,read_len,data_loop,finished_files):
+    if not path.endswith('/'):
+        path = path + '/'
+    if not os.path.exists(path):
+        print("train data dir is not exist")
         raise
-    tokenized_files = get_files(tokenized_path,'.ids')
+    files = get_files(path,'.txt')
     ids = []
-    for item in tokenized_files:
-        with open(item,'r') as f:
-            datas = f.read().strip().strip('\n').split('\n')
-            for token in datas:
-                token = token.split(' ')
-                token = [int(item) for item in token]
-                ids.append(token)
-    return ids
+    biggest_len = 0
+    all_end = 0
+    reach_end = False
+    for item in files:
+        if item in finished_files:
+            continue
+        data = read_data_lines(item)
+        if data_loop == 0:
+            random.shuffle(data)
+        if (data_loop + 1) * read_len < len(data):
+            current_data = data[data_loop * read_len :(data_loop + 1) * read_len]
+        else:
+            current_data = data[data_loop * read_len:]
+            all_end = all_end + 1
+            finished_files.append(item)
+
+        m_len,data_ids = preprocess_triandata2ids(current_data,word2id,max_len)
+
+        ids.extend(data_ids)
+    if all_end == len(files):
+        reach_end = True
+    return ids, reach_end ,finished_files
 
 def padding2maxlen(batch):
     PAD = 0

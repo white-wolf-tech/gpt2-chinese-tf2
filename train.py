@@ -4,7 +4,7 @@ import tensorflow as tf
 from tqdm import tqdm
 from model.gpt2 import TFGPT2Model
 from model.gpt2_config import GPT2Config
-from model.data_helper import gen_voc,load_vocab,process_raws_data,load_traindata_ids,gen_batch_data
+from model.data_helper import gen_voc,load_vocab,load_traindata_ids,gen_batch_data
 from model.model_helper import CustomSchedule,loss_function
 
 raw_path = './data'
@@ -38,15 +38,7 @@ if __name__ == '__main__':
     '''
     载入相关配置信息
     '''
-    config = GPT2Config()
-    '''
-    训练的id数据未生成则生成id数据
-    '''
-    if not os.path.exists(raw_path + '/ids'):
-        process_raws_data(raw_path,word2id,config.n_ctx)
-    elif len(os.listdir(raw_path + '/ids')) == 0:
-        process_raws_data(raw_path,word2id,config.n_ctx)
-    ids = load_traindata_ids(raw_path)    
+    config = GPT2Config()    
     '''
     训练代码
     '''
@@ -79,16 +71,39 @@ if __name__ == '__main__':
     运行训练过程
     '''
     all_step = 0
-    for epoch in range(config.epoch):
+    epoch = 0
+    data_loop = 0
+    finished_files = []
+    while epoch < config.epoch:
         train_loss.reset_states()
         train_accuracy.reset_states()
+        '''
+        训练的id数据载入
+        '''
+        ids,reach_end,finished_files = load_traindata_ids(raw_path,
+                                           word2id,
+                                           config.n_ctx,
+                                           config.read_len,
+                                           data_loop,
+                                           finished_files)
+        data_loop = data_loop + 1
+        '''
+        开始训练模型
+        '''
         for index,batch in enumerate(tqdm(gen_batch_data(config.batch_size,ids))):
             train_step(batch)
             if index % 50 == 0 and index > 0:
                 print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, index, train_loss.result(), train_accuracy.result()))
-            if index % 10000 == 0 and index > 0:
+            if index % 1000 == 0 and index > 0:
                 gpt2model.save_weights(checkpoint_path + "gpt2-" + str(all_step))
                 print('Saving checkpoint inner for epoch {}'.format(epoch+1))
             all_step = all_step + 1
         gpt2model.save_weights(checkpoint_path + "gpt2-" + str(all_step))
-        print('Saving checkpoint outter for epoch {} at {}'.format(epoch+1,ckpt_save_path))
+        print('Saving checkpoint outter for epoch {}'.format(epoch+1))
+        if reach_end:
+            epoch = epoch + 1
+            '''
+            下一个epoch数据重新开始
+            '''
+            data_loop = 0
+            finished_files = []
