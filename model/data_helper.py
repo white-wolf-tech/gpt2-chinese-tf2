@@ -105,7 +105,6 @@ def load_traindata_ids(path,word2id,max_len,read_len,data_loop,finished_files):
     files = get_files(path,'.txt')
     ids = []
     biggest_len = 0
-    all_end = 0
     reach_end = False
     for item in files:
         if item in finished_files:
@@ -114,17 +113,18 @@ def load_traindata_ids(path,word2id,max_len,read_len,data_loop,finished_files):
         if data_loop == 0:
             random.shuffle(data)
             save_new_lines(item,data)
+        print(item,len(data))
         if (data_loop + 1) * read_len <= len(data):
             current_data = data[data_loop * read_len :(data_loop + 1) * read_len]
         else:
             current_data = data[data_loop * read_len:]
-            all_end = all_end + 1
             finished_files.append(item)
 
         m_len,data_ids = preprocess_triandata2ids(current_data,word2id,max_len)
 
         ids.extend(data_ids)
-    if all_end == len(files):
+    print("current finished is {}".format(finished_files))
+    if len(finished_files) == len(files):
         reach_end = True
     return ids, reach_end ,finished_files
 
