@@ -62,7 +62,9 @@ def read_data_lines(filename):
     else:
         train_data = data.split("\n\n")
     return train_data
-
+def save_new_lines(filename,datas):
+    with open(filename, 'w') as f:
+        f.write('\n\n'.join(datas))
 def preprocess_triandata2ids(current_data , word2id, n_ctx):
     max_len = 0
     count_beyond = 0
@@ -111,7 +113,8 @@ def load_traindata_ids(path,word2id,max_len,read_len,data_loop,finished_files):
         data = read_data_lines(item)
         if data_loop == 0:
             random.shuffle(data)
-        if (data_loop + 1) * read_len < len(data):
+            save_new_lines(item,data)
+        if (data_loop + 1) * read_len <= len(data):
             current_data = data[data_loop * read_len :(data_loop + 1) * read_len]
         else:
             current_data = data[data_loop * read_len:]
@@ -140,7 +143,7 @@ def gen_batch_data(batch_size,ids):
     batchs = []
     index = 0
     while index < ids_len:
-        if index + batch_size < ids_len:
+        if index + batch_size <= ids_len:
             batch_item = padding2maxlen(ids[index : index + batch_size])
         else:
             batch_item = padding2maxlen(ids[index : ])

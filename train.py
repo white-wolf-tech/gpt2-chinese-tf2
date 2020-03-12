@@ -100,10 +100,11 @@ if __name__ == '__main__':
             all_step = all_step + 1
         gpt2model.save_weights(checkpoint_path + "gpt2-" + str(all_step))
         print('Saving checkpoint outter for epoch {}'.format(epoch+1))
-        if reach_end:
-            epoch = epoch + 1
+        if reach_end or len(ids) == 0:
             '''
             下一个epoch数据重新开始
             '''
+            print(finished_files)
+            epoch = epoch + 1
             data_loop = 0
             finished_files = []

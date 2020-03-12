@@ -13,9 +13,13 @@ def convert2ids(raw_inputs,word2ids):
 
 def ids2text(output,id2word):
     SEP = 5
-    if output[-1] == SEP:
-        output = output[:-1]
-    return ''.join([id2word[item] for item in output])
+    res = []
+    for item in output:
+        if item <= SEP:
+            continue 
+        text_item = id2word[item]
+        res.append(text_item)
+    return ''.join(res)
 
 def top_k_logits(logits, k):
     if k == 0:
