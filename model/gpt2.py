@@ -44,8 +44,7 @@ class TFSharedEmbeddings(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         self.weight = self.add_weight(
-            "weight", shape=[self.vocab_size, self.hidden_size], initializer=get_initializer(self.initializer_range)
-        )
+            "weight", shape=[self.vocab_size, self.hidden_size], initializer=get_initializer(self.initializer_range))
         super().build(input_shape)
 
     def call(self, inputs, mode="embedding"):

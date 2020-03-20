@@ -59,7 +59,17 @@ def top_p_logits(logits, p):
         tf.ones_like(logits) * -1e10,
         logits,)
 
-def gen_sequence(model=None,
+class gen_sequence(object):
+    """docstring for gen_sequence"""
+    '''
+    解决"ValueError: tf.function-decorated function tried to create variables on non-first call."
+    https://pgaleone.eu/tensorflow/tf.function/2019/03/21/dissecting-tf-function-part-1/
+    '''
+    def __init__(self):
+        super(gen_sequence, self).__init__()
+    #@tf.function
+    def __call__(self,
+                model=None,
                 length=None,
                 context=None,
                 past_shape=None,
@@ -70,71 +80,88 @@ def gen_sequence(model=None,
                 temperature=1,
                 top_k=0,
                 top_p=1):
-    '''
-    若要进行无条件随机输入，start_token赋值SOS，输入为SOS_id。否则为context
-    '''
-    if start_token is None:
-        assert context is not None, 'Specify exactly one of start_token and context!'
-    else:
-        assert context is None, 'Specify exactly one of start_token and context!'
-        context = tf.fill([batch_size, 1], start_token)
-    '''
-    生成logits和past,目前使用无past的方法，past载入参数过多
-    '''
-    def step(tokens,past=None):
-        lm_output = model(inputs=tokens, past=past, training=False)
 
-        logits = lm_output[0][:, :, :vocab_size]
-        if past_shape is None:
-            return {'logits': logits}
+        '''
+        若要进行无条件随机输入，start_token赋值SOS，输入为SOS_id。否则为context
+        '''
+        if start_token is None:
+            assert context is not None, 'Specify exactly one of start_token and context!'
         else:
-            presents = lm_output[1]
-            presents.set_shape(past_shape)
-            return {'logits': logits,'presents': presents}
-    '''
-    可以看到每次输入的prev是前一个samples，只有一个字，所以每次取logit最后一个输出
-    而prev则每次记录前面的输出
-    '''
-    with tf.name_scope('sample_sequence'):
-        init_len = context.shape[-1]
-        output = tf.Variable([[]],shape=(1,None),dtype=tf.int32)
-        prev = tf.cast(context,dtype=tf.int32)
-        
-        def body(prev, output,past=None):
-            next_outputs = step(prev, past=past)
-            logits = next_outputs['logits'][:, -1, :]  / tf.cast(temperature,dtype=tf.float32)
-            logits = top_k_logits(logits, k=top_k)
-            logits = top_p_logits(logits, p=top_p)
-            samples = tf.random.categorical(logits, num_samples=1, dtype=tf.int32)
-            output = tf.concat([output, samples], axis=1)
+            assert context is None, 'Specify exactly one of start_token and context!'
+            context = tf.fill([batch_size, 1], start_token)
+        '''
+        生成logits和past,目前使用无past的方法，past载入参数过多
+        '''
+        def step(tokens,past=None):
+            lm_output = model(inputs=tokens, past=past, training=False)
+
+            logits = lm_output[0][:, :, :vocab_size]
             if past_shape is None:
-                output = tf.cast(output,dtype=tf.int32)
-                prev = tf.cast(prev,dtype=tf.int32)
-                next_input = tf.concat([prev,samples],axis=1) 
+                return {'logits': logits}
             else:
-                next_input = samples
+                presents = lm_output[1]
+                presents.set_shape(past_shape)
+                return {'logits': logits,'presents': presents}
+        '''
+        可以看到每次输入的prev是前一个samples，只有一个字，所以每次取logit最后一个输出
+        而prev则每次记录前面的输出
+        '''
+        with tf.name_scope('sample_sequence'):
+            init_len = context.shape[-1]
 
-            return [next_input,output]
+            prev = tf.cast(context,dtype=tf.int32)
+            def body(time , prev, output,past=None):
+                next_outputs = step(prev, past=past)
+                logits = next_outputs['logits'][:, -1, :]  / tf.cast(temperature,dtype=tf.float32)
+                logits = top_k_logits(logits, k=top_k)
+                logits = top_p_logits(logits, p=top_p)
+                samples = tf.random.categorical(logits, num_samples=1, dtype=tf.int32)
+                '''
+                写入tensor-array,每一个sample只是一个字，而维度为[1][1]
+                所以直接取[-1][-1]，就是将这个唯一的tensor取出来
+                '''
+                output = output.write(time, samples[-1][-1])
 
-        def cond(*arg):
-            output = arg[-1]
-            stop_token = tf.constant(eos_token,dtype=tf.int32)
-            if output.shape[-1] == None:
-                return True
-            else:
-                if output[-1][-1] == stop_token:
-                    return False
+                if past_shape is None:
+                    prev = tf.cast(prev,dtype=tf.int32)
+                    next_input = tf.concat([prev,samples],axis=1) 
                 else:
-                    return True
-        '''
-        进行循环，逐字生成序列
-        '''
-        prev, output = tf.while_loop(
-                        cond,
-                        body,
-                        [prev, output],
-                        maximum_iterations=tf.constant(length - init_len - 1, dtype=tf.int32),
-                        shape_invariants=[ tf.TensorShape([None, None]), output.get_shape()]
-                        )
+                    next_input = samples
 
-        return output
+                return [time + 1,next_input,output]
+
+            def cond(*arg):
+                output = arg[-1]
+                current_len = output.size()
+                stop_token = tf.constant(eos_token,dtype=tf.int32)
+                if current_len == 0:
+                    return True
+                else:
+                    last_item = output.read(current_len - 1, name=None)
+                    if last_item == stop_token:
+                        return False
+                    else:
+                        return True
+
+            '''
+            创建tensorArray用来存储生成的字
+            '''
+            self.output = tf.TensorArray(tf.int32,
+                                        size=0,
+                                        dynamic_size=True,
+                                        clear_after_read=False,
+                                        tensor_array_name='output')
+            time = tf.constant(0)
+            '''
+            进行循环，逐字生成序列
+            '''
+            time , prev, self.output = tf.while_loop(
+                cond,
+                body,
+                [time ,prev, self.output],
+                maximum_iterations=tf.constant(length - init_len - 1, dtype=tf.int32),
+                #shape_invariants = [time.get_shape(), 
+                #                    tf.TensorShape([None, None]),
+                #                    [None]]
+                                    )
+            return self.output.stack()

@@ -25,25 +25,24 @@ def interact_model(
     '''
     载入模型和参数
     '''
+    #tf.compat.v1.disable_eager_execution()
     config = GPT2Config()
     gpt2_model = TFGPT2Model(config)
     gpt2_model.load_weights(tf.train.latest_checkpoint(checkpoint_path))
     '''
     执行对话生成
     '''
-    #@tf.function()
+    gen_seq = gen_sequence()
     def infer_step(context):
-        output = gen_sequence(model=gpt2_model,
-                            length=config.n_ctx,
-                            context=context,
-                            eos_token=word2id['SEP'],
-                            batch_size=batch_size,
-                            vocab_size=config.vocab_size,
-                            temperature=temperature,
-                            top_k=top_k,
-                            top_p=top_p)
-        output = tf.identity(output,name="output")
-        return output
+        return gen_seq(model=gpt2_model,
+                       length=config.n_ctx,
+                       context=context,
+                       eos_token=word2id['SEP'],
+                       batch_size=batch_size,
+                       vocab_size=config.vocab_size,
+                       temperature=temperature,
+                       top_k=top_k,
+                       top_p=top_p) 
     '''
 
     gpt2_concrete = infer_step.get_concrete_function(
@@ -111,7 +110,7 @@ def interact_model(
         执行inference
         '''
         out = infer_step(infer_data)
-        out = out.numpy()[0]
+        out = out.numpy()
         '''
         当前robot输出结果存入对话buffer
         '''
