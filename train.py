@@ -94,7 +94,7 @@ if __name__ == '__main__':
             train_step(batch)
             if index % 50 == 0 and index > 0:
                 print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, index, train_loss.result(), train_accuracy.result()))
-            if index % 1000 == 0 and index > 0:
+            if index % 10000 == 0 and index > 0:
                 gpt2model.save_weights(checkpoint_path + "gpt2-" + str(all_step))
                 print('Saving checkpoint inner for epoch {}'.format(epoch+1))
             all_step = all_step + 1

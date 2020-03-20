@@ -2,7 +2,7 @@
 class GPT2Config():
     def __init__(
         self,
-        vocab_size=7591,
+        vocab_size=7639,
         n_positions=400,
         n_ctx=400,
         n_embd=512,

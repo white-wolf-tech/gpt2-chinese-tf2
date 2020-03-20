@@ -133,7 +133,8 @@ def gen_sequence(model=None,
                         cond,
                         body,
                         [prev, output],
-                        maximum_iterations=tf.constant(length - init_len - 1, dtype=tf.int32)
+                        maximum_iterations=tf.constant(length - init_len - 1, dtype=tf.int32),
+                        shape_invariants=[ tf.TensorShape([None, None]), output.get_shape()]
                         )
 
         return output
