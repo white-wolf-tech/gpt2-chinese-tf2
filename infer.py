@@ -14,7 +14,6 @@ checkpoint_path='./checkpoint/train'
 
 def interact_model(
     dialog_history=10,
-    batch_size=1,
     temperature=1,
     top_k=0,
     top_p=1):
@@ -32,22 +31,17 @@ def interact_model(
     '''
     执行对话生成
     '''
-    gen_seq = gen_sequence()
+    gen_seq = gen_sequence(config)
+    #@tf.function(input_signature=[tf.TensorSpec(shape=(None, None), dtype=tf.int64)])
     def infer_step(context):
-        return gen_seq(model=gpt2_model,
-                       length=config.n_ctx,
-                       context=context,
+        return gen_seq(gpt2_model,
+                       context,
                        eos_token=word2id['SEP'],
-                       batch_size=batch_size,
-                       vocab_size=config.vocab_size,
                        temperature=temperature,
                        top_k=top_k,
                        top_p=top_p) 
     '''
-
-    gpt2_concrete = infer_step.get_concrete_function(
-        tf.TensorSpec(shape=(None, None), dtype=tf.int64,name='input'))
-
+    gpt2_concrete = infer_step.get_concrete_function()
     frozen_func = convert_variables_to_constants_v2(gpt2_concrete)
     frozen_func.graph.as_graph_def()
 
@@ -72,23 +66,20 @@ def interact_model(
     '''
     history_buffer = []
     while True:
-        '''
-        超过buffer容量
-        '''
-        if len(history_buffer) > dialog_history:
-            history_buffer = []
-
         raw_text = input("user input>>")
-        while not raw_text:
-            print('输入为空，重新输入')
-            raw_text = input("user input:")
+        input_data = raw_text
         if raw_text == 'quit':
             break
+        if raw_text == '':
+            input_data = None
         '''
         获取输入ids
         '''
-        context_tokens = convert2ids(raw_text,word2id)
-        history_buffer.append(context_tokens)
+        if input_data != None:
+            context_tokens = convert2ids(raw_text,word2id)
+            history_buffer.append(context_tokens)
+        if len(history_buffer) > config.history_len:
+            history_buffer = history_buffer[3:]
         infer_data = []
         infer_data.append(word2id['SOS'])
         for item in history_buffer:

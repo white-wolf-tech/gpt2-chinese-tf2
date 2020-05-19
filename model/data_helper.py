@@ -29,7 +29,7 @@ def get_files(path,code):
 字典生成以及字典的载入
 '''
 def gen_voc(raw_path,save_vocab_path):
-    vocab = ['PAD','unused0','unused1','UNK','SOS','SEP']
+    vocab = ['PAD','unused0','unused1','UNK','SOS','SEP','EOS']
     for data_path in get_files(raw_path,'.txt'):
         with open(data_path,'rb') as f:
             str_temp = f.read().decode('utf-8')
@@ -65,7 +65,7 @@ def read_data_lines(filename):
 def save_new_lines(filename,datas):
     with open(filename, 'w') as f:
         f.write('\n\n'.join(datas))
-def preprocess_triandata2ids(current_data , word2id, n_ctx):
+def preprocess_triandata2ids(current_data , word2id, n_ctx, current_end):
     max_len = 0
     count_beyond = 0
     datas_res = []
@@ -90,6 +90,8 @@ def preprocess_triandata2ids(current_data , word2id, n_ctx):
             count_beyond = count_beyond + 1
             continue
         datas_res.append(dialogue_ids)
+    if current_end:
+        datas_res[-1].append(word2id['EOS'])
     print("bigger than max len count is {}".format(count_beyond))
     return max_len,datas_res
 
@@ -106,23 +108,22 @@ def load_traindata_ids(path,word2id,max_len,read_len,data_loop,finished_files):
     ids = []
     biggest_len = 0
     reach_end = False
+    current_end = False
     for item in files:
         if item in finished_files:
             continue
         data = read_data_lines(item)
-        if data_loop == 0:
-            random.shuffle(data)
-            save_new_lines(item,data)
         print(item,len(data))
         if (data_loop + 1) * read_len <= len(data):
             current_data = data[data_loop * read_len :(data_loop + 1) * read_len]
         else:
             current_data = data[data_loop * read_len:]
+            current_end = True
             finished_files.append(item)
 
-        m_len,data_ids = preprocess_triandata2ids(current_data,word2id,max_len)
-
+        m_len,data_ids = preprocess_triandata2ids(current_data,word2id,max_len,current_end)
         ids.extend(data_ids)
+    random.shuffle(ids)
     print("current finished is {}".format(finished_files))
     if len(finished_files) == len(files):
         reach_end = True

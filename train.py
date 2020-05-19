@@ -9,7 +9,7 @@ from model.model_helper import CustomSchedule,loss_function
 
 raw_path = './data'
 save_vocab_path = './vocab/vocab.txt'
-checkpoint_path='./checkpoint/train/'
+checkpoint_path='./checkpoint/'
 
 def creat_model(config):
     gpt2model = TFGPT2Model(config)
@@ -48,9 +48,12 @@ if __name__ == '__main__':
     '''
     载入旧模型
     '''
-    if tf.train.latest_checkpoint(checkpoint_path) is not None:
-        print("recover old model....")
-        gpt2model.load_weights(tf.train.latest_checkpoint(checkpoint_path))
+    ckpt = tf.train.Checkpoint(gpt2model=gpt2model,optimizer=optimizer)
+    ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path + 'train', max_to_keep=2)
+    #恢复旧模型
+    ckpt.restore(ckpt_manager.latest_checkpoint)
+    if ckpt_manager.latest_checkpoint:
+        print("Restored from {}".format(ckpt_manager.latest_checkpoint))
     else:
         print("creat new model....")
     # 指定input_signature何时调用tf.function以确保仅构建一个功能图
@@ -94,11 +97,11 @@ if __name__ == '__main__':
             train_step(batch)
             if index % 50 == 0 and index > 0:
                 print('Epoch {} Batch {} Loss {:.4f} Accuracy {:.4f}'.format(epoch + 1, index, train_loss.result(), train_accuracy.result()))
-            if index % 10000 == 0 and index > 0:
-                gpt2model.save_weights(checkpoint_path + "gpt2-" + str(all_step))
-                print('Saving checkpoint inner for epoch {}'.format(epoch+1))
+            if index % 200 == 0 and index > 0:
+                save_path = ckpt_manager.save()
+                print("Saved checkpoint {}".format(save_path))
             all_step = all_step + 1
-        gpt2model.save_weights(checkpoint_path + "gpt2-" + str(all_step))
+        save_path = ckpt_manager.save()
         print('Saving checkpoint outter for epoch {}'.format(epoch+1))
         if reach_end or len(ids) == 0:
             '''

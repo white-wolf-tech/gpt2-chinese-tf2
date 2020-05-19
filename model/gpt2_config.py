@@ -2,12 +2,12 @@
 class GPT2Config():
     def __init__(
         self,
-        vocab_size=7639,
-        n_positions=400,
-        n_ctx=400,
-        n_embd=512,
-        n_layer=8,
-        n_head=8,
+        vocab_size=7642,
+        n_positions=512,
+        n_ctx=512,
+        n_embd=768,
+        n_layer=12,
+        n_head=12,
         resid_pdrop=0.1,
         embd_pdrop=0.1,
         attn_pdrop=0.1,
@@ -15,11 +15,12 @@ class GPT2Config():
         initializer_range=0.02,
         output_hidden_states=False,
         output_attentions=False,
-        lr=1e-4,
+        lr=3e-5,
         epoch=100,
-        batch_size=4,
+        batch_size=2,
         dynamics_lr=False,
         read_len=40000,
+        history_len=5,
         **kwargs
     ):
         super().__init__(**kwargs)
@@ -42,6 +43,7 @@ class GPT2Config():
         self.lr = lr
         self.dynamics_lr = dynamics_lr
         self.read_len = read_len
+        self.history_len = history_len
 
     @property
     def max_position_embeddings(self):

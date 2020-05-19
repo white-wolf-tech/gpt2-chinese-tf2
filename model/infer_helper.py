@@ -65,37 +65,24 @@ class gen_sequence(object):
     解决"ValueError: tf.function-decorated function tried to create variables on non-first call."
     https://pgaleone.eu/tensorflow/tf.function/2019/03/21/dissecting-tf-function-part-1/
     '''
-    def __init__(self):
+    def __init__(self,config):
         super(gen_sequence, self).__init__()
-    #@tf.function
+        self.config = config
     def __call__(self,
-                model=None,
-                length=None,
-                context=None,
+                model,
+                context,
                 past_shape=None,
                 start_token=None,
                 eos_token=None,
-                batch_size=None,
-                vocab_size=None,
                 temperature=1,
                 top_k=0,
                 top_p=1):
-
-        '''
-        若要进行无条件随机输入，start_token赋值SOS，输入为SOS_id。否则为context
-        '''
-        if start_token is None:
-            assert context is not None, 'Specify exactly one of start_token and context!'
-        else:
-            assert context is None, 'Specify exactly one of start_token and context!'
-            context = tf.fill([batch_size, 1], start_token)
         '''
         生成logits和past,目前使用无past的方法，past载入参数过多
         '''
         def step(tokens,past=None):
             lm_output = model(inputs=tokens, past=past, training=False)
-
-            logits = lm_output[0][:, :, :vocab_size]
+            logits = lm_output[0][:, :, :self.config.vocab_size]
             if past_shape is None:
                 return {'logits': logits}
             else:
@@ -108,6 +95,8 @@ class gen_sequence(object):
         '''
         with tf.name_scope('sample_sequence'):
             init_len = context.shape[-1]
+            if init_len == None:
+                init_len = 0
 
             prev = tf.cast(context,dtype=tf.int32)
             def body(time , prev, output,past=None):
@@ -121,13 +110,11 @@ class gen_sequence(object):
                 所以直接取[-1][-1]，就是将这个唯一的tensor取出来
                 '''
                 output = output.write(time, samples[-1][-1])
-
                 if past_shape is None:
                     prev = tf.cast(prev,dtype=tf.int32)
                     next_input = tf.concat([prev,samples],axis=1) 
                 else:
                     next_input = samples
-
                 return [time + 1,next_input,output]
 
             def cond(*arg):
@@ -146,22 +133,23 @@ class gen_sequence(object):
             '''
             创建tensorArray用来存储生成的字
             '''
-            self.output = tf.TensorArray(tf.int32,
-                                        size=0,
-                                        dynamic_size=True,
-                                        clear_after_read=False,
-                                        tensor_array_name='output')
-            time = tf.constant(0)
+            output = tf.TensorArray(tf.int32,
+                                    size=0,
+                                    dynamic_size=True,
+                                    clear_after_read=False,
+                                    tensor_array_name='output')
+            time = tf.constant(0,dtype=tf.int32)
             '''
             进行循环，逐字生成序列
             '''
-            time , prev, self.output = tf.while_loop(
+            time , prev, output = tf.while_loop(
                 cond,
                 body,
-                [time ,prev, self.output],
-                maximum_iterations=tf.constant(length - init_len - 1, dtype=tf.int32),
+                [time ,prev, output],
+                maximum_iterations=tf.constant(self.config.n_ctx - init_len - 1,
+                                               dtype=tf.int32),
                 #shape_invariants = [time.get_shape(), 
-                #                    tf.TensorShape([None, None]),
-                #                    [None]]
+                #                    prev.get_shape(),
+                #                    output]
                                     )
-            return self.output.stack()
+            return output.stack()
